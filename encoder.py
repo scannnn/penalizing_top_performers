@@ -29,7 +29,13 @@ def encoder_test(imgPath):
     print(out.shape)
     return out
 
-
+def preprocessImg(imgPath):
+    img = Image.open(imgPath)
+    img_t = transform(img)
+    batch_t = torch.unsqueeze(img_t, 0)
+    
+    return batch_t
+    
 def build_encoder():
     vgg16 = models.vgg16(pretrained=True) 
     features = nn.Sequential(*(list(vgg16.children())[0:1]))
