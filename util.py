@@ -19,11 +19,11 @@ MEAN = (0.5, 0.5, 0.5,)
 STD = (0.5, 0.5, 0.5,)
 RESIZE = 512
 
-def read_path(source_path) -> List[str]:
+def read_path(source_path, ext) -> List[str]:
     root_path = "."
     path = os.path.join(root_path, source_path)
     dataset = []
-    for p in glob(path+"/"+"*.jpg"):
+    for p in glob(path+"/"+"*."+ext):
         dataset.append(p)
     return dataset 
 
@@ -40,57 +40,59 @@ class Transform():
 
 
 class Dataset(object):
+    
     def __init__(self, files: List[str]):
         self.files = files 
         self.trasformer = Transform()
         
-    def _separate(self, img) -> Tuple[Image.Image, Image.Image]:
-        img = np.array(img, dtype=np.uint8)
-        h, w, _ = img.shape
-        w = int(w/2)
-        return Image.fromarray(img[:, :w, :]) , Image.fromarray(img[:, w:, :])
     
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> torch.Tensor:
         img = Image.open(self.files[idx])
-        input, output = self._separate(img)
-        input_tensor = self.trasformer(input)
-        output_tensor = self.trasformer(output)
-        return input_tensor, output_tensor 
-    
-    def __len__(self):
-        return len(self.files)
-
-class Target_Dataset(Dataset):
-    def _separate(self, img) -> Tuple[Image.Image, Image.Image]:
-        img = np.array(img, dtype=np.uint8)
-        h, w, _ = img.shape
-        w = int(w/2)
-        return Image.fromarray(img[:, :w, :]) , Image.fromarray(img[:, w:, :])
-        
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        img = Image.open(self.files[idx])
-        inp, _ = self._separate(img)
-        input_tensor = self.trasformer(inp)
+        input_tensor = self.trasformer(img)
         return input_tensor
+    # def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    #     img = Image.open(self.files[idx])
+    #     input, output = self._separate(img)
+    #     input.save("./dataset/target/one/"+str(self.a)+".jpg")
+    #     self.a = self.a+1
+    #     input_tensor = self.trasformer(input)
+    #     output_tensor = self.trasformer(output)
+    #     return input_tensor, output_tensor 
     
     def __len__(self):
         return len(self.files)
 
-def show_img_source(img: torch.Tensor, img1: torch.Tensor):
-    fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-    ax = axes.ravel()
-    ax[0].imshow(img.permute(1, 2, 0))
-    ax[0].set_xticks([])
-    ax[0].set_yticks([])
-    ax[0].set_title("source input", c="g")
-    ax[1].imshow(img1.permute(1, 2, 0))
-    ax[1].set_xticks([])
-    ax[1].set_yticks([])
-    ax[1].set_title("source label", c="g")
-    plt.subplots_adjust(wspace=0, hspace=0)
-    plt.show()        
+# class Target_Dataset(Dataset):
+#     def _separate(self, img) -> Tuple[Image.Image, Image.Image]:
+#         img = np.array(img, dtype=np.uint8)
+#         h, w, _ = img.shape
+#         w = int(w/2)
+#         return Image.fromarray(img[:, :w, :]) , Image.fromarray(img[:, w:, :])
+        
+#     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+#         img = Image.open(self.files[idx])
+#         inp, _ = self._separate(img)
+#         input_tensor = self.trasformer(inp)
+#         return input_tensor
+    
+#     def __len__(self):
+#         return len(self.files)
 
-def show_img_target(img: torch.Tensor,):
+# def show_img_source(img: torch.Tensor, img1: torch.Tensor):
+#     fig, axes = plt.subplots(1, 2, figsize=(15, 8))
+#     ax = axes.ravel()
+#     ax[0].imshow(img.permute(1, 2, 0))
+#     ax[0].set_xticks([])
+#     ax[0].set_yticks([])
+#     ax[0].set_title("source input", c="g")
+#     ax[1].imshow(img1.permute(1, 2, 0))
+#     ax[1].set_xticks([])
+#     ax[1].set_yticks([])
+#     ax[1].set_title("source label", c="g")
+#     plt.subplots_adjust(wspace=0, hspace=0)
+#     plt.show()        
+
+def show_img(img: torch.Tensor,):
     p = plt.imshow(img.permute(1,2,0))
     plt.show() 
 

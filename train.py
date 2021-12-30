@@ -3,13 +3,14 @@ from encoder import build_encoder
 from classifier import build_classifier
 from generator import build_generator
 from util import adjust_learning_rate, soft_label_cross_entropy
+import util
 import torch.nn.functional as F
 import numpy as np 
 import os
 from statistics import mean 
 from tqdm import tqdm 
 import torch 
-
+from torch.utils.data import DataLoader
 
 def train():
     feature_extractor = build_encoder()
@@ -43,9 +44,23 @@ def train():
     start_epoch = 0
     iteration = 0
     MAX_ITERATION = 100
-    src_train_loader = None
-    tgt_train_loader = None
+    src_train_imgs = util.read_path("dataset/source/images","png")
+    src_train_labels = util.read_path( "dataset/source/labels","png")
+    target_train_imgs = util.read_path("dataset/target","jpg")
 
+    src_train_imgs_ds = util.Dataset(src_train_imgs)
+    src_train_labels_ds = util.Dataset(src_train_labels)
+    trgt_train_ds = util.Dataset(target_train_imgs)
+
+    BATCH_SIZE = 1
+    #device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    src_train_img_loader = DataLoader(src_train_imgs_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
+    src_train_label_loader = DataLoader(src_train_labels_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
+    tgt_train_loader = DataLoader(trgt_train_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
+    
     criterion = torch.nn.CrossEntropyLoss(ignore_index=255)
     bce_loss = torch.nn.BCELoss(reduction='none')
 
@@ -53,7 +68,8 @@ def train():
     generator.train()
     model_D.train()
 
-    for i, ((src_input, src_label, src_name), (tgt_input, _, _)) in enumerate(zip(src_train_loader, tgt_train_loader)):
+    
+    for i, (src_input, src_label, tgt_input) in enumerate(zip(tqdm(src_train_img_loader), tqdm(src_train_label_loader), tqdm(tgt_train_loader))):
         current_lr = adjust_learning_rate("poly", 0.002, iteration, MAX_ITERATION, power=0.9)
         current_lr_D = adjust_learning_rate("poly", 0.02, iteration, MAX_ITERATION, power=0.9)
         for index in range(len(optimizer_fea.param_groups)):
@@ -66,9 +82,10 @@ def train():
         optimizer_fea.zero_grad()
         optimizer_gn.zero_grad()
         optimizer_D.zero_grad()
-        src_input = src_input.cuda(non_blocking=True)
-        src_label = src_label.cuda(non_blocking=True).long()
-        tgt_input = tgt_input.cuda(non_blocking=True)
+        
+        # src_input = src_input.cuda(non_blocking=True)
+        # src_label = src_label.cuda(non_blocking=True).long()
+        # tgt_input = tgt_input.cuda(non_blocking=True)
 
         src_size = src_input.shape[-2:]
         tgt_size = tgt_input.shape[-2:]
@@ -78,6 +95,7 @@ def train():
         # src_pred ile bir loss hesaplayacağız ve bu loss ile backward yapacağız
         temperature = 1.8
         src_pred = src_pred.div(temperature)
+        print(src_pred)
         loss_seg = criterion(src_pred, src_label)
         loss_seg.backward()
         
