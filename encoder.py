@@ -14,7 +14,7 @@ transform = transforms.Compose([
  std=[0.229, 0.224, 0.225]                  
  )])
 
-def encoder(imgPath):
+def encoder_test(imgPath):
     img = Image.open(imgPath)
     img_t = transform(img)
     batch_t = torch.unsqueeze(img_t, 0)
@@ -28,3 +28,14 @@ def encoder(imgPath):
     out = backbone(batch_t)
     print(out.shape)
     return out
+
+
+def build_encoder():
+    vgg16 = models.vgg16(pretrained=True) 
+    features = nn.Sequential(*(list(vgg16.children())[0:1]))
+    #print(features)
+
+    backbone = nn.Sequential(*features)
+    backbone.eval()
+    
+    return backbone
