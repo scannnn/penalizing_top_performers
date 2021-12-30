@@ -33,7 +33,7 @@ def preprocessImg(imgPath):
     img = Image.open(imgPath)
     img_t = transform(img)
     batch_t = torch.unsqueeze(img_t, 0)
-    
+    print(batch_t)
     return batch_t
     
 def build_encoder():
