@@ -11,6 +11,7 @@ from statistics import mean
 from tqdm import tqdm 
 import torch 
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 def train():
     feature_extractor = build_encoder()
@@ -78,32 +79,54 @@ def train():
             optimizer_gn.param_groups[index]['lr'] = current_lr*10
         for index in range(len(optimizer_D.param_groups)):
             optimizer_D.param_groups[index]['lr'] = current_lr_D
-        
+#######################
+        src_input = src_input[0]
+        src_label = src_label[0]
+        tgt_input = tgt_input[0]
+        transform = transforms.Compose([            
+            transforms.Resize(224),                    
+            transforms.CenterCrop(224),                
+            transforms.ToTensor(),                     
+            transforms.Normalize(                      
+            mean=[0.485, 0.456, 0.406],                
+            std=[0.229, 0.224, 0.225]                  
+        )])
+        img_src_input = transform(src_input.permute(1,2,0))
+        img_src_label = transform(src_label.permute(1,2,0))
+        img_tgt_input = tgt_input(tgt_input.permute(1,2,0))
+        src_input_r = torch.unsqueeze(img_src_input, 0)
+        src_label_r = torch.unsqueeze(img_src_label, 0)
+        tgt_input_r = torch.unsqueeze(img_tgt_input, 0)
+
+###################
         optimizer_fea.zero_grad()
         optimizer_gn.zero_grad()
         optimizer_D.zero_grad()
         
         # src_input = src_input.cuda(non_blocking=True)
         # src_label = src_label.cuda(non_blocking=True).long()
-        # tgt_input = tgt_input.cuda(non_blocking=True)
+        # tgt_input_r = tgt_input_r.cuda(non_blocking=True)
 
-        src_size = src_input.shape[-2:]
-        tgt_size = tgt_input.shape[-2:]
+        src_size = src_input_r.shape[-2:]
+        tgt_size = tgt_input_r.shape[-2:]
 
-        src_fea = feature_extractor(src_input)
+        src_fea = feature_extractor(src_input_r)
         src_pred = classifier(src_fea, src_size)
         # src_pred ile bir loss hesaplayacağız ve bu loss ile backward yapacağız
         temperature = 1.8
         src_pred = src_pred.div(temperature)
-        print(src_pred)
-        loss_seg = criterion(src_pred, src_label)
+    
+        print(src_pred.shape)
+        
+
+        loss_seg = criterion(src_pred, src_label_r)
         loss_seg.backward()
         
 
         src_soft_label = F.softmax(src_pred, dim=1).detach()
         src_soft_label[src_soft_label>0.9] = 0.9
         
-        tgt_fea = feature_extractor(tgt_input)
+        tgt_fea = feature_extractor(tgt_input_r)
         tgt_pred = generator(tgt_fea)
         tgt_soft_label = F.softmax(tgt_pred, dim=1)
         
@@ -132,7 +155,7 @@ def train():
         
         iteration = iteration + 1
 
-        n = src_input.size(0)
+        n = src_input_r.size(0)
 
                 
         if (iteration == MAX_ITERATION or iteration % 5==0):
