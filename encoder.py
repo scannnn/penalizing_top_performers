@@ -42,6 +42,6 @@ def build_encoder():
     #print(features)
 
     backbone = nn.Sequential(*features)
-    backbone.eval()
+    #backbone.eval()
     
     return backbone
