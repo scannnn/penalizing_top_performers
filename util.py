@@ -14,10 +14,46 @@ from torchvision import transforms
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader 
 import torch.nn.functional as F
+import transform
 
 MEAN = (0.5, 0.5, 0.5,)
 STD = (0.5, 0.5, 0.5,)
 RESIZE = 512
+
+def build_transform(cfg, mode, is_source):
+    if mode=="train":
+        w, h = cfg.INPUT.SOURCE_INPUT_SIZE_TRAIN if is_source else cfg.INPUT.TARGET_INPUT_SIZE_TRAIN
+        trans_list = [
+            transform.ToTensor(),
+            transform.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD, to_bgr255=cfg.INPUT.TO_BGR255)
+        ]
+        if cfg.INPUT.HORIZONTAL_FLIP_PROB_TRAIN > 0:
+            trans_list = [transform.RandomHorizontalFlip(p=cfg.INPUT.HORIZONTAL_FLIP_PROB_TRAIN),] + trans_list
+        if cfg.INPUT.INPUT_SCALES_TRAIN[0]==cfg.INPUT.INPUT_SCALES_TRAIN[1] and cfg.INPUT.INPUT_SCALES_TRAIN[0]==1:
+            trans_list = [transform.Resize((h, w)),] + trans_list
+        else:
+            trans_list = [
+                transform.RandomScale(scale=cfg.INPUT.INPUT_SCALES_TRAIN),
+                transform.RandomCrop(size=(h, w), pad_if_needed=True),
+            ] + trans_list
+        if is_source:
+            trans_list = [
+                transform.ColorJitter(
+                    brightness=cfg.INPUT.BRIGHTNESS,
+                    contrast=cfg.INPUT.CONTRAST,
+                    saturation=cfg.INPUT.SATURATION,
+                    hue=cfg.INPUT.HUE,
+                ),
+            ] + trans_list
+        trans = transform.Compose(trans_list)
+    else:
+        w, h = cfg.INPUT.INPUT_SIZE_TEST
+        trans = transform.Compose([
+            transform.Resize((h, w), resize_label=False),
+            transform.ToTensor(),
+            transform.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD, to_bgr255=cfg.INPUT.TO_BGR255)
+        ])
+    return trans
 
 def read_path(source_path, ext) -> List[str]:
     root_path = "."
@@ -32,65 +68,53 @@ class Transform():
         self.data_transform = transforms.Compose([
             transforms.Resize((resize, resize)), 
             transforms.ToTensor(),
-            transforms.Normalize(0, 1)
+            transforms.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD, to_bgr255=cfg.INPUT.TO_BGR255)
         ])
         
     def __call__(self, img: Image.Image):
         return self.data_transform(img)
 
+class GTA5Dataset(object):
+    
+    def __init__(self, cfg, img_files: List[str], label_files : List[str]):
+        self.img_files = img_files 
+        self.label_files = label_files
+        self.trasformer = build_transform(cfg, "train", True)
+
+        self.id_to_trainid = {7: 0, 8: 1, 11: 2, 12: 3, 13: 4, 17: 5,
+                              19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
+                              26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
+    
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        img = Image.open(self.img_files[idx]).convert('RGB')
+        label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
+
+        label_copy = 255 * np.ones(label.shape, dtype=np.float32)
+        for k, v in self.id_to_trainid.items():
+            label_copy[label == k] = v
+        label = Image.fromarray(label_copy)
+        img_tens, label_tens  = self.trasformer(img, label)
+        
+        return img_tens, label_tens
+    
+    def __len__(self):
+        return len(self.img_files)
 
 class Dataset(object):
     
-    def __init__(self, files: List[str]):
+    def __init__(self, cfg, files: List[str]):
         self.files = files 
-        self.trasformer = Transform()
+        self.trasformer = build_transform(cfg, "train", False)#Transform()
         
     
     def __getitem__(self, idx: int) -> torch.Tensor:
-        img = Image.open(self.files[idx])
-        input_tensor = self.trasformer(img)
+        img = Image.open(self.files[idx]).convert('RGB')
+        input_tensor, _ = self.trasformer(img, img)
         return input_tensor
-    # def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-    #     img = Image.open(self.files[idx])
-    #     input, output = self._separate(img)
-    #     input.save("./dataset/target/one/"+str(self.a)+".jpg")
-    #     self.a = self.a+1
-    #     input_tensor = self.trasformer(input)
-    #     output_tensor = self.trasformer(output)
-    #     return input_tensor, output_tensor 
     
     def __len__(self):
         return len(self.files)
-
-# class Target_Dataset(Dataset):
-#     def _separate(self, img) -> Tuple[Image.Image, Image.Image]:
-#         img = np.array(img, dtype=np.uint8)
-#         h, w, _ = img.shape
-#         w = int(w/2)
-#         return Image.fromarray(img[:, :w, :]) , Image.fromarray(img[:, w:, :])
-        
-#     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-#         img = Image.open(self.files[idx])
-#         inp, _ = self._separate(img)
-#         input_tensor = self.trasformer(inp)
-#         return input_tensor
-    
-#     def __len__(self):
-#         return len(self.files)
-
-# def show_img_source(img: torch.Tensor, img1: torch.Tensor):
-#     fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-#     ax = axes.ravel()
-#     ax[0].imshow(img.permute(1, 2, 0))
-#     ax[0].set_xticks([])
-#     ax[0].set_yticks([])
-#     ax[0].set_title("source input", c="g")
-#     ax[1].imshow(img1.permute(1, 2, 0))
-#     ax[1].set_xticks([])
-#     ax[1].set_yticks([])
-#     ax[1].set_title("source label", c="g")
-#     plt.subplots_adjust(wspace=0, hspace=0)
-#     plt.show()        
+      
 
 def show_img(img: torch.Tensor,):
     p = plt.imshow(img.permute(1,2,0))
@@ -105,6 +129,8 @@ def adjust_learning_rate(method, base_lr, iters, max_iters, power):
 
 def soft_label_cross_entropy(pred, soft_label, pixel_weights=None):
     N, C, H, W = pred.shape
+    print(pred.shape)
+    print(soft_label.shape)
     loss = -soft_label.float()*F.log_softmax(pred, dim=1)
     if pixel_weights is None:
         return torch.mean(torch.sum(loss, dim=1))
