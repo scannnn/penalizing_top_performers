@@ -5,9 +5,17 @@ from util.logger import *
 from tqdm import tqdm
 from tqdm import trange
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 from cv2 import imread
 
 TQDM_COLS = 80
+
+def soft_label_cross_entropy(pred, soft_label, pixel_weights=None):
+    N, C, H, W = pred.shape
+    loss = -soft_label.float()*F.log_softmax(pred, dim=1)
+    if pixel_weights is None:
+        return torch.mean(torch.sum(loss, dim=1))
+    return torch.mean(pixel_weights*torch.sum(loss, dim=1))
 
 def cross_entropy2d(input, target):
     # input: (n, c, h, w), target: (n, h, w)
@@ -30,7 +38,7 @@ def cross_entropy2d(input, target):
 
 class Trainer(object):
 
-    def __init__(self, classifier_model, optimizer, logger, num_epochs, train_loader,
+    def __init__(self, classifier_model, generator_model, discriminator_model, optimizer_cl, optimizer_gn, optimizer_d, logger, num_epochs, train_loader,
                  test_loader=None,
                  epoch=0,
                  log_batch_stride=30,
@@ -50,7 +58,11 @@ class Trainer(object):
         """
         self.cuda = torch.cuda.is_available()
         self.classifier_model = classifier_model
-        self.optim = optimizer
+        self.generator_model = generator_model
+        self.discriminator_model = discriminator_model
+        self.optim_cl = optimizer_cl
+        self.optim_gn = optimizer_gn
+        self.optim_d = optimizer_d
         self.logger = logger
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -78,7 +90,7 @@ class Trainer(object):
             # model checkpoints
             if epoch%self.check_point_step == 0:
                 self.logger.save_model_and_optimizer(self.classifier_model,
-                                                     self.optim,
+                                                     self.optim_cl,
                                                      'epoch_{}'.format(epoch))
 
 
@@ -96,21 +108,24 @@ class Trainer(object):
                 self._eval_batch(sample_batched, n_batch, num_batches)
 
     def _train_epoch(self):
-
         num_batches = len(self.train_loader)
 
         if self.test_loader:
             dataloader_iterator = iter(self.test_loader)
 
+        # target img'lar da dönecek
         for n_batch, (sample_batched) in tqdm(enumerate(self.train_loader)):
             self.classifier_model.train()
+            self.generator_model.train()
+            self.discriminator_model.train()
             data = sample_batched[0]
             target = sample_batched[1].long()
+            city_img = target_sample_batched[0]
 
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
 
-            self.optim.zero_grad()
+            self.optim_cl.zero_grad()
 
             # [pool5_out, out]
             classifier_output = self.classifier_model(data)
@@ -122,7 +137,41 @@ class Trainer(object):
                 raise ValueError('loss is nan while training')
 
             loss.backward()
-            self.optim.step()
+            self.optim_cl.step()
+
+            """src_soft_label = F.softmax(decoder_output, dim=1).detach()
+            src_soft_label[src_soft_label>0.9] = 0.9"""
+
+            # generator part
+            classifier_output_target = self.classifier_model(city_img)
+            encoder_output_target = classifier_output_target[0]
+            target_prediction = self.generator_model(encoder_output_target)
+            target_soft_label = F.softmax(target_prediction, dim=1)
+            
+            tgt_soft_label = target_soft_label.detach()
+            tgt_soft_label[tgt_soft_label>0.9] = 0.9
+
+            # TODO: Discriminator gelecek buraya
+            # SOURCE IMG ICINDE LOSS EKLE BURAYA SONRA TRG_LOSS + SRC_LOSS TOPLA
+            target_prediction = self.discriminator_model(target_prediction)
+            loss_adv_tgt = 0.001*soft_label_cross_entropy(target_prediction, torch.cat((tgt_soft_label, torch.zeros_like(tgt_soft_label)), dim=1))
+
+            source_prediction = self.generator_model(encoder_output)
+            source_soft_label = F.softmax(source_prediction, dim=1)
+            
+            src_soft_label = source_soft_label.detach()
+            src_soft_label[src_soft_label>0.9] = 0.9
+
+            source_prediction = self.discriminator_model(source_prediction)
+            loss_adv_src = 0.001*soft_label_cross_entropy(source_prediction, torch.cat((src_soft_label, torch.zeros_like(src_soft_label)), dim=1))
+
+            # LsGAN + LtGAN
+            loss_adv = loss_adv_tgt + loss_adv_src
+            loss_adv.backward()
+
+            self.optim_cl.step()
+            self.optim_gn.step()
+            self.optim_d.zero_grad()
 
             if n_batch%self.log_batch_stride != 0:
                 continue
