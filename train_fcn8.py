@@ -123,3 +123,56 @@ class FCN8(torch.nn.Module):
 def fcn8_vgg16(n_classes):
     vgg = vgg_16()
     return FCN8(n_classes, vgg)
+
+def main(device='cuda'):
+    source_img_path = "/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/images"
+    source_label_path ="/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/labels"
+    target_img_path = "/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target"
+    src_train_imgs = utils.read_path(source_img_path,"png")
+    src_train_labels = utils.read_path(source_label_path,"png")
+    target_train_imgs = utils.read_path(target_img_path,"jpg")
+
+    src_train_ds = utils.GTA5Dataset(cfg, src_train_imgs, src_train_labels)
+    trgt_train_ds = utils.Dataset(cfg, target_train_imgs)
+
+    n_classes = 19
+    num_epochs = 100
+    pretrained = True
+    fixed_feature = False
+
+    logger = Logger(model_name="fcn8_vgg16", data_name='gta5')
+
+    src_train_loader = DataLoader(src_train_ds, batch_size=1, shuffle=False, drop_last=True)
+    tgt_train_loader = DataLoader(trgt_train_ds, batch_size=1, shuffle=True, drop_last=True)
+
+    ### Model
+    model = fcn8_vgg16(n_classes)
+    model.to(device)
+
+    ###Load model
+    ###please check the foloder: (.segmentation/test/runs/models)
+    #logger.load_model(model, 'epoch_15')
+
+    ### Optimizers
+    if pretrained and fixed_feature: #fine tunning
+        params_to_update = model.parameters()
+        print("Params to learn:")
+        params_to_update = []
+        for name, param in model.named_parameters():
+            if param.requires_grad == True:
+                params_to_update.append(param)
+                print("\t", name)
+        optimizer = torch.optim.Adadelta(params_to_update)
+    else:
+        optimizer = torch.optim.Adadelta(model.parameters())
+
+    ### Train
+    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    trainer = Trainer(model, optimizer, logger, num_epochs, src_train_loader)
+    trainer.train()
+
+
+    #### Wariting the predict result.
+    """predict(model, 
+            'dataset/cityspaces/input.png', 
+            'dataset/cityspaces/output.png')""" 
