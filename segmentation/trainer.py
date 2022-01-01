@@ -62,7 +62,7 @@ class Trainer(object):
         self.epoch = epoch
 
     def train(self):
-        if not next(self.model.parameters()).is_cuda and self.cuda:
+        if not next(self.classifier_model.parameters()).is_cuda and self.cuda:
             raise ValueError("A model should be set via .cuda() before constructing optimizer.")
 
         for epoch in range(self.epoch, self.num_epoches):
@@ -77,7 +77,7 @@ class Trainer(object):
 
             # model checkpoints
             if epoch%self.check_point_step == 0:
-                self.logger.save_model_and_optimizer(self.model,
+                self.logger.save_model_and_optimizer(self.classifier_model,
                                                      self.optim,
                                                      'epoch_{}'.format(epoch))
 
@@ -85,7 +85,7 @@ class Trainer(object):
 
     def evaluate(self):
         num_batches = len(self.test_loader)
-        self.model.eval()
+        self.classifier_model.eval()
 
         with torch.no_grad():
             for n_batch, (sample_batched) in tqdm(enumerate(self.test_loader),
@@ -132,8 +132,8 @@ class Trainer(object):
             self.logger.store_checkpoint_var('img_width', data.shape[3])
             self.logger.store_checkpoint_var('img_height', data.shape[2])
 
-            self.model.img_width = data.shape[3]
-            self.model.img_height = data.shape[2]
+            self.classifier_model.img_width = data.shape[3]
+            self.classifier_model.img_height = data.shape[2]
 
             #write logs to Tensorboard.
             lbl_pred = classifier_output.data.max(1)[1].cpu().numpy()[:, :, :]
@@ -156,7 +156,7 @@ class Trainer(object):
 
             #if the trainer has the test loader, it evaluates the model using the test data.
             if self.test_loader:
-                self.model.eval()
+                self.classifier_model.eval()
                 with torch.no_grad():
                     try:
                         sample_batched = next(dataloader_iterator)

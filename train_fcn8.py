@@ -220,9 +220,9 @@ def fcn8_vgg16(n_classes):
     return FCN8(n_classes)
 
 def main(device='cuda'):
-    source_img_path = "/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/images"
-    source_label_path ="/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/labels"
-    target_img_path = "/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target"
+    source_img_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/images"
+    source_label_path ="gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/labels"
+    target_img_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target"
     src_train_imgs = utils.read_path(source_img_path,"png")
     src_train_labels = utils.read_path(source_label_path,"png")
     target_train_imgs = utils.read_path(target_img_path,"jpg")
@@ -276,8 +276,3 @@ def main(device='cuda'):
     """predict(model, 
             'dataset/cityspaces/input.png', 
             'dataset/cityspaces/output.png')""" 
-
-
-if __name__ == "__main__":
-    encoder = fcn8_vgg16(19)
-    print(encoder)

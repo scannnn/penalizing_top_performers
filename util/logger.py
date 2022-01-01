@@ -29,8 +29,8 @@ class Logger:
 
 		current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_")
 
-		train_log_dir = r'runs/' + current_time + self.comment + r'/train'
-		test_log_dir = r'runs/' + current_time + self.comment + r'/test'
+		train_log_dir = r'runs2/' + current_time + self.comment + r'/train'
+		test_log_dir = r'runs2/' + current_time + self.comment + r'/test'
 
 		self.hdl_chkpoint = CheckpointHandler()
 
@@ -188,7 +188,7 @@ class Logger:
 		return img_name, grid, step
 
 	def _save_torch_images(self, grid, epoch, n_batch, comment=''):
-		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/images/{}'.format(self.data_subdir)
+		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs2/images/{}'.format(self.data_subdir)
 		Logger._make_dir(out_dir)
 
 		# Save squared
@@ -205,21 +205,21 @@ class Logger:
 		self.hdl_chkpoint.store_var(key, value)
 
 	def save_model(self, model, file_name):
-		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/models/{}'.format(self.data_subdir)
+		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs2/models/{}'.format(self.data_subdir)
 		if not Logger._exist(out_dir):
 			Logger._make_dir(out_dir)
 
 		self.hdl_chkpoint.save_checkpoint('{}/{}'.format(out_dir, file_name))
 
 	def save_model_and_optimizer(self, model, optim, file_name):
-		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/models/{}'.format(self.data_subdir)
+		out_dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs2/models/{}'.format(self.data_subdir)
 		if not Logger._exist(out_dir):
 			Logger._make_dir(out_dir)
 
 		self.hdl_chkpoint.save_checkpoint('{}/{}'.format(out_dir, file_name), model, optim)
 
 	def load_model(self, model, file_name):
-		dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/models/{}'.format(self.data_subdir)
+		dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs2/models/{}'.format(self.data_subdir)
 		assert Logger._exist(dir)
 
 		self.hdl_chkpoint = self.hdl_chkpoint.load_checkpoint('{}/{}'.format(dir, file_name))
@@ -233,7 +233,7 @@ class Logger:
 				setattr(model, k, attr_copy)
 
 	# def load_model_and_optimizer(self, model, optim, file_name):
-	# 	dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/models/{}'.format(self.data_subdir)
+	# 	dir = 'gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs2/models/{}'.format(self.data_subdir)
 	# 	assert Logger._exist(dir)
 	#
 	# 	self.hdl_chkpoint = self.hdl_chkpoint.load_checkpoint('{}/{}'.format(dir, file_name))
