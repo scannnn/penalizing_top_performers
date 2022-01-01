@@ -30,7 +30,7 @@ def cross_entropy2d(input, target):
 
 class Trainer(object):
 
-    def __init__(self, model, optimizer, logger, num_epochs, train_loader,
+    def __init__(self, classifier_model, optimizer, logger, num_epochs, train_loader,
                  test_loader=None,
                  epoch=0,
                  log_batch_stride=30,
@@ -49,7 +49,7 @@ class Trainer(object):
         :param scheduler: optimizer scheduler for adjusting learning rate.
         """
         self.cuda = torch.cuda.is_available()
-        self.model = model
+        self.classifier_model = classifier_model
         self.optim = optimizer
         self.logger = logger
         self.train_loader = train_loader
@@ -103,7 +103,7 @@ class Trainer(object):
             dataloader_iterator = iter(self.test_loader)
 
         for n_batch, (sample_batched) in tqdm(enumerate(self.train_loader)):
-            self.model.train()
+            self.classifier_model.train()
             data = sample_batched[0]
             target = sample_batched[1].long()
 
@@ -112,8 +112,13 @@ class Trainer(object):
 
             self.optim.zero_grad()
 
-            score = self.model(data)
-            loss = cross_entropy2d(score, target)
+            # [pool5_out, out]
+            classifier_output = self.classifier_model(data)
+            encoder_output = classifier_output[0]
+            print(len(classifier_output))
+            print(f"Encoder output{encoder_output}")
+            print(f"Decoder output{classifier_output}")
+            loss = cross_entropy2d(classifier_output[1], target)
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while training')
@@ -131,10 +136,10 @@ class Trainer(object):
             self.model.img_height = data.shape[2]
 
             #write logs to Tensorboard.
-            lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+            lbl_pred = classifier_output.data.max(1)[1].cpu().numpy()[:, :, :]
             lbl_true = target.data.cpu().numpy()
             acc, acc_cls, mean_iou, fwavacc = \
-                label_accuracy_score(lbl_true, lbl_pred, n_class=score.shape[1])
+                label_accuracy_score(lbl_true, lbl_pred, n_class=classifier_output.shape[1])
 
             self.logger.log_train(loss, 'loss', self.epoch, n_batch, num_batches)
             self.logger.log_train(acc, 'acc', self.epoch, n_batch, num_batches)
@@ -172,7 +177,7 @@ class Trainer(object):
             data, target = data.cuda(), target.cuda()
         torch.cuda.empty_cache()
 
-        score = self.model(data)
+        score = self.classifier_model(data)
 
         loss = cross_entropy2d(score, target)
         loss_data = loss.data.item()
