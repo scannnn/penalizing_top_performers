@@ -59,8 +59,8 @@ def vgg_16():
     return backbone
 
 def vgg_16_v2():
-    model = vgg16()
-    model.load_state_dict(torch.load("/Users/can.cetindag/Documents/PERSONAL/AI/PROJECT/penalizing_top_performers/models/vgg16-397923af.pth"))
+    model = vgg16(pretrained=True)
+    #model.load_state_dict(torch.load("/Users/can.cetindag/Documents/PERSONAL/AI/PROJECT/penalizing_top_performers/models/vgg16-397923af.pth"))
     return _VGG(model, model.features, True)
 
 
@@ -255,14 +255,14 @@ class FCN8V2(nn.Module):
 
     def forward(self, x):
         saved_pools = []
-
+        pool5_out = None
         o = x
         for i in range(len(self.features)):
             o = self.features[i](o)
             if i == self.copy_feature_info[-3].index or\
                     i == self.copy_feature_info[-2].index:
                 saved_pools.append(o)
-            if i == self.copy_feature_info[-1]:
+            if i == self.copy_feature_info[-1].index:
                 pool5_out = self.features[i](o)
 
         o = self.classifier(o)
