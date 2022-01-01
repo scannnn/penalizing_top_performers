@@ -115,10 +115,8 @@ class Trainer(object):
             # [pool5_out, out]
             classifier_output = self.classifier_model(data)
             encoder_output = classifier_output[0]
-            print(len(classifier_output))
-            print(f"Encoder output{encoder_output}")
-            print(f"Decoder output{classifier_output}")
-            loss = cross_entropy2d(classifier_output[1], target)
+            decoder_output = classifier_output[1]
+            loss = cross_entropy2d(decoder_output, target)
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while training')
@@ -136,10 +134,10 @@ class Trainer(object):
             self.classifier_model.img_height = data.shape[2]
 
             #write logs to Tensorboard.
-            lbl_pred = classifier_output.data.max(1)[1].cpu().numpy()[:, :, :]
+            lbl_pred = decoder_output.data.max(1)[1].cpu().numpy()[:, :, :]
             lbl_true = target.data.cpu().numpy()
             acc, acc_cls, mean_iou, fwavacc = \
-                label_accuracy_score(lbl_true, lbl_pred, n_class=classifier_output.shape[1])
+                label_accuracy_score(lbl_true, lbl_pred, n_class=decoder_output.shape[1])
 
             self.logger.log_train(loss, 'loss', self.epoch, n_batch, num_batches)
             self.logger.log_train(acc, 'acc', self.epoch, n_batch, num_batches)
