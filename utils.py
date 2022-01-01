@@ -61,6 +61,7 @@ def read_path(source_path, ext) -> List[str]:
     dataset = []
     for p in glob(path+"/"+"*."+ext):
         dataset.append(p)
+    dataset.sort()
     return dataset 
 
 class Transform():
@@ -77,8 +78,8 @@ class Transform():
 class GTA5Dataset(object):
     
     def __init__(self, cfg, img_files: List[str], label_files : List[str]):
-        self.img_files = img_files 
-        self.label_files = label_files
+        self.img_files = img_files[:50]
+        self.label_files = label_files[:50]
         self.trasformer = build_transform(cfg, "train", True)
 
         self.id_to_trainid = {7: 0, 8: 1, 11: 2, 12: 3, 13: 4, 17: 5,
@@ -86,6 +87,7 @@ class GTA5Dataset(object):
                               26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
     
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        #print(self.img_files[idx], "->", self.label_files[idx])
         img = Image.open(self.img_files[idx]).convert('RGB')
         label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
 
@@ -129,8 +131,6 @@ def adjust_learning_rate(method, base_lr, iters, max_iters, power):
 
 def soft_label_cross_entropy(pred, soft_label, pixel_weights=None):
     N, C, H, W = pred.shape
-    print(pred.shape)
-    print(soft_label.shape)
     loss = -soft_label.float()*F.log_softmax(pred, dim=1)
     if pixel_weights is None:
         return torch.mean(torch.sum(loss, dim=1))

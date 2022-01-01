@@ -100,7 +100,7 @@ class Logger:
 	def log_images_train(self, images, epoch, n_batch, num_batches, input_axis='bcyx',
 				   nrows=8, padding=2, pad_value=1, normalize=True, normalize_uint8=False):
 		"""
-		This function writes images to Tensorboard and save the file at [./data/images/]
+		This function writes images to Tensorboard and save the file at [/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/data/images/]
 		:param images: 			available follow
 								Tensor: float32
 								np: uint8, int64, float32
@@ -126,7 +126,7 @@ class Logger:
 	def log_images_test(self, images, epoch, n_batch, num_batches, input_axis='bcyx',
 				   nrows=8, padding=2, pad_value=1, normalize=True, normalize_uint8=False):
 		"""
-		This function writes images to Tensorboard and save the file at [./data/images/]
+		This function writes images to Tensorboard and save the file at [/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/data/images/]
 		:param images: 			available follow
 								Tensor: float32
 								np: uint8, int64, float32
@@ -188,7 +188,7 @@ class Logger:
 		return img_name, grid, step
 
 	def _save_torch_images(self, grid, epoch, n_batch, comment=''):
-		out_dir = './runs/images/{}'.format(self.data_subdir)
+		out_dir = '/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/runs/images/{}'.format(self.data_subdir)
 		Logger._make_dir(out_dir)
 
 		# Save squared
@@ -205,21 +205,21 @@ class Logger:
 		self.hdl_chkpoint.store_var(key, value)
 
 	def save_model(self, model, file_name):
-		out_dir = './runs/models/{}'.format(self.data_subdir)
+		out_dir = '/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/runs/models/{}'.format(self.data_subdir)
 		if not Logger._exist(out_dir):
 			Logger._make_dir(out_dir)
 
 		self.hdl_chkpoint.save_checkpoint('{}/{}'.format(out_dir, file_name))
 
 	def save_model_and_optimizer(self, model, optim, file_name):
-		out_dir = './runs/models/{}'.format(self.data_subdir)
+		out_dir = '/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/runs/models/{}'.format(self.data_subdir)
 		if not Logger._exist(out_dir):
 			Logger._make_dir(out_dir)
 
 		self.hdl_chkpoint.save_checkpoint('{}/{}'.format(out_dir, file_name), model, optim)
 
 	def load_model(self, model, file_name):
-		dir = './runs/models/{}'.format(self.data_subdir)
+		dir = '/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/runs/models/{}'.format(self.data_subdir)
 		assert Logger._exist(dir)
 
 		self.hdl_chkpoint = self.hdl_chkpoint.load_checkpoint('{}/{}'.format(dir, file_name))
@@ -233,7 +233,7 @@ class Logger:
 				setattr(model, k, attr_copy)
 
 	# def load_model_and_optimizer(self, model, optim, file_name):
-	# 	dir = './runs/models/{}'.format(self.data_subdir)
+	# 	dir = '/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/runs/models/{}'.format(self.data_subdir)
 	# 	assert Logger._exist(dir)
 	#
 	# 	self.hdl_chkpoint = self.hdl_chkpoint.load_checkpoint('{}/{}'.format(dir, file_name))

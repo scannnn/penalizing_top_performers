@@ -4,6 +4,8 @@ from util.validation import *
 from util.logger import *
 from tqdm import tqdm
 from tqdm import trange
+import matplotlib.pyplot as plt
+from cv2 import imread
 
 TQDM_COLS = 80
 
@@ -102,7 +104,6 @@ class Trainer(object):
 
         for n_batch, (sample_batched) in tqdm(enumerate(self.train_loader)):
             self.model.train()
-            print("--------:", len(sample_batched))
             data = sample_batched[0]
             target = sample_batched[1].long()
 
@@ -111,12 +112,8 @@ class Trainer(object):
 
             self.optim.zero_grad()
 
-            torch.cuda.empty_cache()
-
             score = self.model(data)
-            print(score.shape, target.shape)
             loss = cross_entropy2d(score, target)
-
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while training')
@@ -163,6 +160,8 @@ class Trainer(object):
                         sample_batched = next(dataloader_iterator)
 
                     self._eval_batch(sample_batched, n_batch, num_batches)
+            
+            torch.cuda.empty_cache()
 
 
     def _eval_batch(self, sample_batched, n_batch, num_batches):
