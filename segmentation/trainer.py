@@ -175,17 +175,18 @@ class Trainer(object):
             data, target = data.cuda(), target.cuda()
         torch.cuda.empty_cache()
 
-        score = self.classifier_model(data)
+        classifier_output = self.classifier_model(data)
+        decoder_output = classifier_output[1]
 
-        loss = cross_entropy2d(score, target)
+        loss = cross_entropy2d(decoder_output, target)
         loss_data = loss.data.item()
         if np.isnan(loss_data):
             raise ValueError('loss is nan while training')
 
-        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+        lbl_pred = decoder_output.data.max(1)[1].cpu().numpy()[:, :, :]
         lbl_true = target.data.cpu().numpy()
         acc, acc_cls, mean_iou, fwavacc = \
-            label_accuracy_score(lbl_true, lbl_pred, n_class=score.shape[1])
+            label_accuracy_score(lbl_true, lbl_pred, n_class=decoder_output.shape[1])
 
         self.logger.log_test(loss, 'loss', self.epoch, n_batch, num_batches)
         self.logger.log_test(acc, 'acc', self.epoch, n_batch, num_batches)
