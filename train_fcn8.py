@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division, print_function
+from discriminator import discriminator
 import utils
 from configs import cfg
 from torch.utils.data import DataLoader
@@ -213,18 +214,24 @@ def main(v2=True, device='cuda'):
 
     ### Model
     # encoder_model = vgg_16()
-    if v2:
-        classifier_model = fcn8_vgg16_V2(n_classes=n_classes)
+    classifier_model = fcn8_vgg16_V2(n_classes=n_classes)
     generator_model = GENERATOR()
+    # TODO: DISCRIMINATOR MODEL YAZILACAK
+    discriminator_model = None
     # encoder_model.to(device)
     classifier_model.to(device)
     generator_model.to(device)
+    discriminator_model.to(device)
 
-    optimizer_cl = torch.optim.SGD(classifier_model.parameters(), lr=0.02, momentum=0.9, weight_decay=0.0005)
+    optimizer_cl = torch.optim.SGD(classifier_model.parameters(), lr=0.002, momentum=0.9, weight_decay=0.0005)
     optimizer_cl.zero_grad()
 
-    optimizer_gn = torch.optim.SGD(generator_model.parameters(), lr=0.02, momentum=0.9, weight_decay=0.0005)
+    optimizer_gn = torch.optim.SGD(generator_model.parameters(), lr=0.002, momentum=0.9, weight_decay=0.0005)
     optimizer_gn.zero_grad()
+
+    optimizer_d = torch.optim.Adam(discriminator_model.parameters(), lr=0.002, betas=(0.9, 0.99))
+    optimizer_d.zero_grad()
+
 
     ###Load model
     ###please check the foloder: (.segmentation/test/runs/models)
@@ -245,7 +252,7 @@ def main(v2=True, device='cuda'):
 
     ### Train
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    trainer = Trainer(classifier_model, generator_model, optimizer_cl, optimizer_gn, logger, num_epochs, src_train_loader)
+    trainer = Trainer(classifier_model, generator_model, discriminator_model, optimizer_cl, optimizer_gn, optimizer_d, logger, num_epochs, src_train_loader, tgt_train_loader)
     trainer.train()
 
 

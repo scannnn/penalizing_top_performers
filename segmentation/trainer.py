@@ -39,11 +39,7 @@ def cross_entropy2d(input, target):
 class Trainer(object):
 
     def __init__(self, classifier_model, generator_model, discriminator_model, optimizer_cl, optimizer_gn, optimizer_d, logger, num_epochs, train_loader,
-                 test_loader=None,
-                 epoch=0,
-                 log_batch_stride=30,
-                 check_point_epoch_stride=60,
-                 scheduler=None):
+                 target_train_loader, test_loader=None, epoch=0, log_batch_stride=30, check_point_epoch_stride=10, scheduler=None):
         """
         :param model: A network model to train.
         :param optimizer: A optimizer.
@@ -65,6 +61,7 @@ class Trainer(object):
         self.optim_d = optimizer_d
         self.logger = logger
         self.train_loader = train_loader
+        self.target_train_loader = target_train_loader
         self.test_loader = test_loader
         self.num_epoches = num_epochs
         self.check_point_step = check_point_epoch_stride
@@ -109,18 +106,21 @@ class Trainer(object):
 
     def _train_epoch(self):
         num_batches = len(self.train_loader)
+        num_batches_target = len(self.target_train_loader)
 
         if self.test_loader:
             dataloader_iterator = iter(self.test_loader)
 
         # target img'lar da dönecek
-        for n_batch, (sample_batched) in tqdm(enumerate(self.train_loader)):
+        # TODO: HATA VAR MI DİYE BİR TEST ET
+        for n_batch, ((sample_batched), sample_batched_target) in tqdm(enumerate(zip(self.train_loader, self.target_train_loader))):
             self.classifier_model.train()
             self.generator_model.train()
             self.discriminator_model.train()
             data = sample_batched[0]
             target = sample_batched[1].long()
-            city_img = target_sample_batched[0]
+            # BU BİZİM TARGET IMG OLACAK
+            city_img = sample_batched_target
 
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
