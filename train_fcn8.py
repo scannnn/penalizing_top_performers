@@ -217,7 +217,7 @@ def main(v2=True, device='cuda'):
     classifier_model = fcn8_vgg16_V2(n_classes=n_classes)
     generator_model = GENERATOR()
     # TODO: DISCRIMINATOR MODEL YAZILACAK
-    discriminator_model = None
+    discriminator_model = discriminator()
     # encoder_model.to(device)
     classifier_model.to(device)
     generator_model.to(device)
