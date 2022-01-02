@@ -56,7 +56,7 @@ def build_transform(cfg, mode, is_source):
     return trans
 
 def read_path(source_path, ext) -> List[str]:
-    root_path = "/content"
+    root_path = "/content "
     path = os.path.join(root_path, source_path)
     dataset = []
     for p in glob(path+"/"+"*."+ext):
