@@ -258,7 +258,7 @@ def main(v2=True, device='cuda'):
     target_train_labels = utils.read_path(target_label_path,"jpg")
 
     src_train_ds = utils.GTA5Dataset(cfg, src_train_imgs, src_train_labels)
-    trgt_train_ds = utils.Dataset(cfg, target_train_imgs, target_train_labels)
+    trgt_train_ds = utils.Dataset(cfg, target_train_imgs)
 
     n_classes = 19
     num_epochs = 100

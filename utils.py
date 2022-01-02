@@ -104,10 +104,10 @@ class GTA5Dataset(object):
 
 class Dataset(object):
     
-    def __init__(self, cfg, img_files: List[str], label_files : List[str]):
+    def __init__(self, cfg, img_files: List[str]):
         self.img_files = img_files[50:100]
-        self.label_files = label_files[50:100]
-        self.trasformer = build_transform(cfg, "train", False)#Transform()
+        #self.label_files = label_files[50:100]
+        self.trasformer = build_transform(cfg, "train", True)#Transform()
         
         self.id_to_trainid = {
             7: 0,
@@ -133,18 +133,18 @@ class Dataset(object):
     
     def __getitem__(self, idx: int) -> torch.Tensor:
         img = Image.open(self.img_files[idx]).convert('RGB')
-        label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
+        #label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
 
-        label_copy = 255 * np.ones(label.shape, dtype=np.float32)
+        """label_copy = 255 * np.ones(label.shape, dtype=np.float32)
         for k, v in self.id_to_trainid.items():
             label_copy[label == k] = v
-        label = Image.fromarray(label_copy)
-        img_tens, label_tens  = self.trasformer(img, label)
+        label = Image.fromarray(label_copy)"""
+        img_tens, _  = self.trasformer(img, img)
         
-        return img_tens, label_tens
+        return img_tens
     
     def __len__(self):
-        return len(self.files)
+        return len(self.img_files)
       
 
 def show_img(img: torch.Tensor,):
