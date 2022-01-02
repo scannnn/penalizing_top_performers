@@ -104,8 +104,9 @@ class GTA5Dataset(object):
 
 class Dataset(object):
     
-    def __init__(self, cfg, files: List[str]):
-        self.files = files 
+    def __init__(self, cfg, img_files: List[str], label_files : List[str]):
+        self.img_files = img_files[50:100]
+        self.label_files = label_files[50:100]
         self.trasformer = build_transform(cfg, "train", False)#Transform()
         
         self.id_to_trainid = {
@@ -131,7 +132,7 @@ class Dataset(object):
         }
     
     def __getitem__(self, idx: int) -> torch.Tensor:
-        img = Image.open(self.files[idx]).convert('RGB')
+        img = Image.open(self.img_files[idx]).convert('RGB')
         label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
 
         label_copy = 255 * np.ones(label.shape, dtype=np.float32)
