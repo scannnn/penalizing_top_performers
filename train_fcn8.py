@@ -173,13 +173,13 @@ class GENERATOR(nn.Module):
     def forward(self, x):
         residual = x
 
-        out1 = self.conv1(x) + residual
-        out = self.bn1(out1)
-        out = self.relu(out)
-        out2 = self.conv2(out) + out1
-        out = self.bn2(out2)
-        out = self.relu(out)
-        out = self.deconv1(out) + out2
+        out1 = self.relu(self.bn1(self.conv1(x))) + residual
+        # out = self.bn1(out1)
+        # out = self.relu(out)
+        out2 = self.relu(self.bn2(self.conv2(out1))) + out1
+        # out = self.bn2(out2)
+        # out = self.relu(out)
+        out = self.deconv1(out2) + out2
 
         d1 = self.in1(self.leakyRelu(self.deconv1(out)))
         d2 = self.in2(self.leakyRelu(self.deconv2(d1)))

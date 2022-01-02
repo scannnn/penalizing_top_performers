@@ -123,7 +123,7 @@ class Trainer(object):
             city_img = sample_batched_target
 
             if self.cuda:
-                data, target = data.cuda(), target.cuda()
+                data, target, city_img = data.cuda(), target.cuda(), city_img.cuda()
 
             self.optim_cl.zero_grad()
 
