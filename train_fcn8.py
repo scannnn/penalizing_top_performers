@@ -173,11 +173,11 @@ class GENERATOR(nn.Module):
     def forward(self, x):
         residual = x
 
-        out1 = self.relu(self.bn1(self.conv1(x)))
-        out = self.bn1(out1)
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn1(out)
         out = self.relu(out)
-        out2 = self.relu(self.bn2(self.conv2(out)))
-        out = self.bn2(out2)
+        out = self.relu(self.bn2(self.conv2(out)))
+        out = self.bn2(out)
         out = self.relu(out)
         out = self.deconv1(out)
 
@@ -250,13 +250,15 @@ def fcn8_vgg16_V2(n_classes):
 def main(v2=True, device='cuda'):
     source_img_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/images"
     source_label_path ="gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/source/labels"
-    target_img_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target"
+    target_img_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target/images"
+    target_label_path = "gdrive/MyDrive/AI_PROJECT(BLG_527E)/dataset/target/labels"
     src_train_imgs = utils.read_path(source_img_path,"png")
     src_train_labels = utils.read_path(source_label_path,"png")
     target_train_imgs = utils.read_path(target_img_path,"jpg")
+    target_train_labels = utils.read_path(target_label_path,"jpg")
 
     src_train_ds = utils.GTA5Dataset(cfg, src_train_imgs, src_train_labels)
-    trgt_train_ds = utils.Dataset(cfg, target_train_imgs)
+    trgt_train_ds = utils.Dataset(cfg, target_train_imgs, target_train_labels)
 
     n_classes = 19
     num_epochs = 100
@@ -266,14 +268,14 @@ def main(v2=True, device='cuda'):
     logger = Logger(model_name="fcn8_vgg16", data_name='gta5')
 
     src_train_loader = DataLoader(src_train_ds, batch_size=1, shuffle=False, drop_last=True)
-    tgt_train_loader = DataLoader(trgt_train_ds, batch_size=1, shuffle=True, drop_last=True)
+    tgt_train_loader = DataLoader(trgt_train_ds, batch_size=1, shuffle=False, drop_last=True)
 
     ### Model
     # encoder_model = vgg_16()
     classifier_model = fcn8_vgg16_V2(n_classes=n_classes)
     generator_model = GENERATOR()
     # TODO: DISCRIMINATOR MODEL YAZILACAK
-    discriminator_model = PatchGAN()
+    discriminator_model = PatchGAN(64)
     # encoder_model.to(device)
     classifier_model.to(device)
     generator_model.to(device)
@@ -317,7 +319,3 @@ def main(v2=True, device='cuda'):
             'dataset/cityspaces/input.png', 
             'dataset/cityspaces/output.png')""" 
 
-
-
-generator = GENERATOR()
-print(generator)

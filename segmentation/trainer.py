@@ -113,14 +113,15 @@ class Trainer(object):
 
         # target img'lar da dönecek
         # TODO: HATA VAR MI DİYE BİR TEST ET
-        for n_batch, ((sample_batched), sample_batched_target) in tqdm(enumerate(zip(self.train_loader, self.target_train_loader))):
+        for n_batch, (sample_batched, sample_batched_target) in tqdm(enumerate(zip(self.train_loader, self.target_train_loader))):
             self.classifier_model.train()
             self.generator_model.train()
             self.discriminator_model.train()
             data = sample_batched[0]
             target = sample_batched[1].long()
             # BU BİZİM TARGET IMG OLACAK
-            city_img = sample_batched_target
+            city_img = sample_batched_target[0]
+            city_img_target = sample_batched_target[1].long()
 
             if self.cuda:
                 data, target, city_img = data.cuda(), target.cuda(), city_img.cuda()
@@ -153,7 +154,7 @@ class Trainer(object):
 
             # TODO: Discriminator gelecek buraya
             # SOURCE IMG ICINDE LOSS EKLE BURAYA SONRA TRG_LOSS + SRC_LOSS TOPLA
-            target_prediction = self.discriminator_model(target_prediction)
+            target_prediction = self.discriminator_model(target_prediction, city_img_target)
             loss_adv_tgt = 0.001*soft_label_cross_entropy(target_prediction, torch.cat((tgt_soft_label, torch.zeros_like(tgt_soft_label)), dim=1))
 
             source_prediction = self.generator_model(encoder_output)
@@ -162,7 +163,7 @@ class Trainer(object):
             src_soft_label = source_soft_label.detach()
             src_soft_label[src_soft_label>0.9] = 0.9
 
-            source_prediction = self.discriminator_model(source_prediction)
+            source_prediction = self.discriminator_model(source_prediction, target)
             loss_adv_src = 0.001*soft_label_cross_entropy(source_prediction, torch.cat((src_soft_label, torch.zeros_like(src_soft_label)), dim=1))
 
             # LsGAN + LtGAN
