@@ -149,14 +149,14 @@ class Trainer(object):
             target_prediction = self.generator_model(encoder_output_target)
             target_soft_label = F.softmax(target_prediction, dim=1)
             
-            tgt_soft_label = target_soft_label.detach()
+            """tgt_soft_label = target_soft_label.detach()
             tgt_soft_label[tgt_soft_label>0.9] = 0.9
 
             # TODO: Discriminator gelecek buraya
             # SOURCE IMG ICINDE LOSS EKLE BURAYA SONRA TRG_LOSS + SRC_LOSS TOPLA
             target_prediction = self.discriminator_model(target_prediction, city_img_target)
             loss_adv_tgt = 0.001*soft_label_cross_entropy(target_prediction, torch.cat((tgt_soft_label, torch.zeros_like(tgt_soft_label)), dim=1))
-
+"""
             source_prediction = self.generator_model(encoder_output)
             source_soft_label = F.softmax(source_prediction, dim=1)
             
@@ -166,8 +166,8 @@ class Trainer(object):
             source_prediction = self.discriminator_model(source_prediction, target)
             loss_adv_src = 0.001*soft_label_cross_entropy(source_prediction, torch.cat((src_soft_label, torch.zeros_like(src_soft_label)), dim=1))
 
-            # LsGAN + LtGAN
-            loss_adv = loss_adv_tgt + loss_adv_src
+            # LsGAN + LtGAN loss_adv_tgt
+            loss_adv = loss_adv_src
             loss_adv.backward()
 
             self.optim_cl.step()
