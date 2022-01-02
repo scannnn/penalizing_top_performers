@@ -173,20 +173,76 @@ class GENERATOR(nn.Module):
     def forward(self, x):
         residual = x
 
-        out1 = self.relu(self.bn1(self.conv1(x))) + residual
-        # out = self.bn1(out1)
-        # out = self.relu(out)
-        out2 = self.relu(self.bn2(self.conv2(out1))) + out1
-        # out = self.bn2(out2)
-        # out = self.relu(out)
-        out = self.deconv1(out2) + out2
+        out1 = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn1(out1)
+        out = self.relu(out)
+        out2 = self.relu(self.bn2(self.conv2(out)))
+        out = self.bn2(out2)
+        out = self.relu(out)
+        out = self.deconv1(out)
 
         d1 = self.in1(self.leakyRelu(self.deconv1(out)))
         d2 = self.in2(self.leakyRelu(self.deconv2(d1)))
         d3 = self.in3(self.leakyRelu(self.deconv3(d2)))           
 
         return d3
-        
+
+
+class DownSampleConv(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel=4, strides=2, padding=1, activation=True, batchnorm=True):
+        super().__init__()
+        self.activation = activation
+        self.batchnorm = batchnorm
+
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel, strides, padding)
+
+        if batchnorm:
+            self.bn = nn.BatchNorm2d(out_channels)
+
+        if activation:
+            self.act = nn.LeakyReLU(0.2)
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.batchnorm:
+            x = self.bn(x)
+        if self.activation:
+            x = self.act(x)
+        return x
+
+class PatchGAN(nn.Module):
+
+    def __init__(self, input_channels):
+        super().__init__()
+        self.d1 = DownSampleConv(input_channels, 128, batchnorm=False)
+        self.d2 = DownSampleConv(128, 256)
+        self.d3 = DownSampleConv(256, 512)
+        self.d4 = DownSampleConv(512, 1024)
+        self.d5 = DownSampleConv(1024, 2048)
+        self.final = nn.Conv2d(2048, 1, kernel_size=1)
+
+        self._initialize_weights()
+
+    def forward(self, x, y):
+        x = torch.cat([x, y], axis=1)
+        x0 = self.d1(x)
+        x1 = self.d2(x0)
+        x2 = self.d3(x1)
+        x3 = self.d4(x2)
+        x4 = self.d5(x3)
+        xn = self.final(x4)
+        return xn
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
 def fcn8_vgg16_V2(n_classes):
     return FCN8V2(n_classes, vgg_16_v2())
@@ -217,7 +273,7 @@ def main(v2=True, device='cuda'):
     classifier_model = fcn8_vgg16_V2(n_classes=n_classes)
     generator_model = GENERATOR()
     # TODO: DISCRIMINATOR MODEL YAZILACAK
-    discriminator_model = discriminator()
+    discriminator_model = PatchGAN()
     # encoder_model.to(device)
     classifier_model.to(device)
     generator_model.to(device)
