@@ -2,48 +2,60 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class generator(nn.Module):
-    # initializers
+
     def __init__(self):
-        super(generator, self).__init__()
-        # FCN8s decoder
-        # ReLU'da denenebilir
+        super(GENERATOR, self).__init__()
+
+        self.conv1 = nn.Conv2d(512, 512, kernel_size=3, 
+                     stride=2, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(512)
+        self.relu = nn.ReLU(inplace=True)
+
+        self.conv2 = nn.Conv2d(512, 512, kernel_size=3, 
+                     stride=2, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(512)
+
+        self.conv3 = nn.Conv2d(512, 512, kernel_size=3, 
+                     stride=2, padding=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(512)
+
+        self.deconv1 = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
+        self.in1 = nn.InstanceNorm2d(256)
         self.leakyRelu = nn.LeakyReLU(inplace=True)
-        self.deconv1 = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.in1     = nn.InstanceNorm2d(512)
-        self.deconv2 = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.in2     = nn.InstanceNorm2d(512)
-        self.deconv3 = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.in3     = nn.InstanceNorm2d(256)
-        self.deconv4 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.in4     = nn.InstanceNorm2d(128)
-        self.deconv5 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.in5     = nn.InstanceNorm2d(64)
-        # out_channels here is class number
-        self.classifier = nn.Conv2d(in_channels=64, out_channels=19, kernel_size=1)
 
-    # weight_init
-    def weight_init(self, mean, std):
-        for m in self._modules:
-            normal_init(self._modules[m], mean, std)
+        self.deconv2 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
+        self.in2 = nn.InstanceNorm2d(128)
 
-    # forward method
+        self.deconv3 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
+        self.in3 = nn.InstanceNorm2d(64)
+        
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
-        d1 = self.in1(self.leakyRelu(self.deconv1(x)))      # size=(N, 512, x.H/16, x.W/16)
-        d2 = self.in2(self.leakyRelu(self.deconv2(d1)))  # size=(N, 256, x.H/8, x.W/8)
-        d3 = self.in3(self.leakyRelu(self.deconv3(d2)))  # size=(N, 128, x.H/4, x.W/4)
-        d4 = self.in4(self.leakyRelu(self.deconv4(d3)))  # size=(N, 64, x.H/2, x.W/2)
-        d5 = self.in5(self.leakyRelu(self.deconv5(d4)))  # size=(N, 32, x.H, x.W)
-        d6 = self.classifier(d5)                         # size=(N, n_class, x.H/1, x.W/1)
+        residual = x
 
-        return d6
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.relu(self.bn2(self.conv2(out)))
+        out = self.bn2(out)
+        out = self.relu(out)
+        out = self.deconv1(out)
 
-def normal_init(m, mean, std):
-    if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
-        m.weight.data.normal_(mean, std)
-        m.bias.data.zero_()
+        d1 = self.in1(self.leakyRelu(self.deconv1(out)))
+        d2 = self.in2(self.leakyRelu(self.deconv2(d1)))
+        d3 = self.in3(self.leakyRelu(self.deconv3(d2)))           
 
-def build_generator():
-    G = generator()
-    normal_init(G, 0, 0.01)
-    return G
+        return d3

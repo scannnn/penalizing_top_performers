@@ -64,17 +64,6 @@ def read_path(source_path, ext) -> List[str]:
     dataset.sort()
     return dataset 
 
-class Transform():
-    def __init__(self, resize=RESIZE, mean=MEAN, std=STD):
-        self.data_transform = transforms.Compose([
-            transforms.Resize((resize, resize)), 
-            transforms.ToTensor(),
-            transforms.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD, to_bgr255=cfg.INPUT.TO_BGR255)
-        ])
-        
-    def __call__(self, img: Image.Image):
-        return self.data_transform(img)
-
 class GTA5Dataset(object):
     
     def __init__(self, cfg, img_files: List[str], label_files : List[str]):
@@ -87,7 +76,6 @@ class GTA5Dataset(object):
                               26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
     
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        #print(self.img_files[idx], "->", self.label_files[idx])
         img = Image.open(self.img_files[idx]).convert('RGB')
         label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
 
@@ -106,9 +94,7 @@ class Dataset(object):
     
     def __init__(self, cfg, img_files: List[str]):
         self.img_files = img_files[50:100]
-        #self.label_files = label_files[50:100]
-        self.trasformer = build_transform(cfg, "train", True)#Transform()
-        
+        self.trasformer = build_transform(cfg, "train", True)       
         self.id_to_trainid = {
             7: 0,
             8: 1,
@@ -133,7 +119,6 @@ class Dataset(object):
     
     def __getitem__(self, idx: int) -> torch.Tensor:
         img = Image.open(self.img_files[idx]).convert('RGB')
-        #label = np.array(Image.open(self.label_files[idx]),dtype=np.float32)
 
         """label_copy = 255 * np.ones(label.shape, dtype=np.float32)
         for k, v in self.id_to_trainid.items():

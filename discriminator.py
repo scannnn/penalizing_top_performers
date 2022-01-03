@@ -2,101 +2,62 @@ from torch import nn
 import torch
 import torch.nn.functional as F
 
-class discriminator(nn.Module):
-    # initializers
-    def __init__(self, d=64):
-        super(discriminator, self).__init__()
-        self.conv1 = nn.Conv2d(6, d, 4, 2, 1)
-        self.conv2 = nn.Conv2d(d, d * 2, 4, 2, 1)
-        self.conv2_bn = nn.BatchNorm2d(d * 2)
-        self.conv3 = nn.Conv2d(d * 2, d * 4, 4, 2, 1)
-        self.conv3_bn = nn.BatchNorm2d(d * 4)
-        self.conv4 = nn.Conv2d(d * 4, d * 8, 4, 1, 1)
-        self.conv4_bn = nn.BatchNorm2d(d * 8)
-        self.conv5 = nn.Conv2d(d * 8, 1, 4, 1, 1)
+class PatchGAN(nn.Module):
 
-    # weight_init
-    def weight_init(self, mean, std):
-        for m in self._modules:
-            normal_init(self._modules[m], mean, std)
+    def __init__(self, input_channels):
+        super().__init__()
+        self.d1 = DownSampleConv(input_channels, 128, batchnorm=False)
+        self.d2 = DownSampleConv(128, 256)
+        self.d3 = DownSampleConv(256, 512)
+        self.d4 = DownSampleConv(512, 1024)
+        self.d5 = DownSampleConv(1024, 2048)
+        self.final = nn.Conv2d(2048, 1, kernel_size=1)
 
-    # forward method
-    def forward(self, input, label):
-        x = torch.cat([input, label], 1)
-        x = F.leaky_relu(self.conv1(x), 0.2)
-        x = F.leaky_relu(self.conv2_bn(self.conv2(x)), 0.2)
-        x = F.leaky_relu(self.conv3_bn(self.conv3(x)), 0.2)
-        x = F.leaky_relu(self.conv4_bn(self.conv4(x)), 0.2)
-        x = F.sigmoid(self.conv5(x))
+        self._initialize_weights()
 
+    def forward(self, x, y):
+        x = torch.cat([x, y], axis=1)
+        x0 = self.d1(x)
+        x1 = self.d2(x0)
+        x2 = self.d3(x1)
+        x3 = self.d4(x2)
+        x4 = self.d5(x3)
+        xn = self.final(x4)
+        return xn
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
+
+class DownSampleConv(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel=4, strides=2, padding=1, activation=True, batchnorm=True):
+        super().__init__()
+        self.activation = activation
+        self.batchnorm = batchnorm
+
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel, strides, padding)
+
+        if batchnorm:
+            self.bn = nn.BatchNorm2d(out_channels)
+
+        if activation:
+            self.act = nn.LeakyReLU(0.2)
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.batchnorm:
+            x = self.bn(x)
+        if self.activation:
+            x = self.act(x)
         return x
 
-def normal_init(m, mean, std):
-    if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
-        m.weight.data.normal_(mean, std)
-        m.bias.data.zero_()
-
-def build_discriminator():
-    model_D = discriminator()
-    normal_init(model_D, 0, 0.01)
-    return model_D
 
 
-class PixelDiscriminator(nn.Module):
-    def __init__(self, input_nc, ndf=256, num_classes=1):
-        super(PixelDiscriminator, self).__init__()
-
-        self.D = nn.Sequential(
-            nn.Conv2d(input_nc, ndf, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(ndf, ndf//2, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(ndf//2, ndf//4, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True)
-		)
-        self.cls1 = nn.Conv2d(ndf//4, num_classes, kernel_size=3, stride=1, padding=1)
-        self.cls2 = nn.Conv2d(ndf//4, num_classes, kernel_size=3, stride=1, padding=1)
-
-    def forward(self, x, size=None):
-        out = self.D(x)
-        src_out = self.cls1(out)
-        tgt_out = self.cls2(out)
-        out = torch.cat((src_out, tgt_out), dim=1)
-        if size is not None:
-            out = F.interpolate(out, size=size, mode='bilinear', align_corners=True)
-        return out
-
-def build_pixel_discriminator():
-    model_D = PixelDiscriminator(512, 256, num_classes=1)
-    return model_D
-
-class FCDiscriminator(nn.Module):
-
-	def __init__(self, ndf = 64):
-		super(FCDiscriminator, self).__init__()
-
-		self.conv1 = nn.Conv2d(19, ndf, kernel_size=4, stride=2, padding=1)
-		self.conv2 = nn.Conv2d(ndf, ndf*2, kernel_size=4, stride=2, padding=1)
-		self.conv3 = nn.Conv2d(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1)
-		self.conv4 = nn.Conv2d(ndf*4, ndf*8, kernel_size=4, stride=2, padding=1)
-		self.classifier = nn.Conv2d(ndf*8, 1, kernel_size=4, stride=2, padding=1)
-
-		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
-		self.up_sample = nn.Upsample(scale_factor=32, mode='bilinear')
-		self.sigmoid = nn.Sigmoid()
-
-
-	def forward(self, x):
-		x = self.conv1(x)
-		x = self.leaky_relu(x)
-		x = self.conv2(x)
-		x = self.leaky_relu(x)
-		x = self.conv3(x)
-		x = self.leaky_relu(x)
-		x = self.conv4(x)
-		x = self.leaky_relu(x)
-		x = self.classifier(x)
-		x = self.up_sample(x)
-		x = self.sigmoid(x) 
-
-		return x
