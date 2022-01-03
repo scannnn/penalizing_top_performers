@@ -34,20 +34,9 @@ class Trainer(object):
                  test_loader=None,
                  epoch=0,
                  log_batch_stride=30,
-                 check_point_epoch_stride=60,
+                 check_point_epoch_stride=1,
                  scheduler=None):
-        """
-        :param model: A network model to train.
-        :param optimizer: A optimizer.
-        :param logger: The logger for writing results to Tensorboard.
-        :param num_epochs: iteration count.
-        :param train_loader: pytorch's DataLoader
-        :param test_loader: pytorch's DataLoader
-        :param epoch: the start epoch number.
-        :param log_batch_stride: it determines the step to write log in the batch loop.
-        :param check_point_epoch_stride: it determines the step to save a model in the epoch loop.
-        :param scheduler: optimizer scheduler for adjusting learning rate.
-        """
+
         self.cuda = torch.cuda.is_available()
         self.model = model
         self.optim = optimizer

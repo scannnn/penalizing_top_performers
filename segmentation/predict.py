@@ -1,10 +1,3 @@
-"""
-The predict functions.
-The main function is to write output on the color from the gray labeled image.
-Library:	Tensowflow 2.2.0, pyTorch 1.5.1, OpenCV-Python 4.1.1.26
-Author:		Ian Yoo
-Email:		thyoostar@gmail.com
-"""
 from __future__ import absolute_import, division, print_function
 
 import random
@@ -30,14 +23,6 @@ class_colors = [(random.randint(0, 255), random.randint(
     0, 255), random.randint(0, 255)) for _ in range(5000)]
 
 def convert_seg_gray_to_color(input, n_classes, output_path=None, colors=class_colors):
-	"""
-	Convert the segmented image on gray to color.
-	:param input: it is available to get two type(ndarray, string), string type is a file path.
-	:param n_classes: number of the classes.
-	:param output_path: output path. if it is None, this function return result array(ndarray)
-	:param colors: refer to 'class_colors' format. Default: random assigned color.
-	:return: if out_path is None, return result array(ndarray)
-	"""
 	if isinstance(input, six.string_types):
 		seg = cv2.imread(input, flags=cv2.IMREAD_GRAYSCALE)
 	elif type(input) is np.ndarray:
@@ -61,14 +46,6 @@ def convert_seg_gray_to_color(input, n_classes, output_path=None, colors=class_c
 		return seg_img
 
 def predict(model, input_path, output_path, colors=class_colors):
-	"""
-	This function can save a predicted result on the color from the trained model.
-	:param model: a network model.
-	:param input_path: the input file path.
-	:param output_path: the output file path.
-	:param colors: refer to 'class_colors' format. Default: random assigned color.
-	:return: model result.
-	"""
 	model.eval()
 
 	img = cv2.imread(input_path, flags=cv2.IMREAD_COLOR)

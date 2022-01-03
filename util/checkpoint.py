@@ -1,10 +1,3 @@
-"""
-CheckpointHandler.
-Library:	Tensowflow 2.2.0, pyTorch 1.5.1
-Author:		Ian Yoo
-Email:		thyoostar@gmail.com
-"""
-
 import torch
 
 class CheckpointHandler:

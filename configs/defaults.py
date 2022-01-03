@@ -5,7 +5,7 @@ from yacs.config import CfgNode as CN
 _C = CN()
 
 _C.MODEL = CN()
-_C.MODEL.NAME = "deeplab_resnet101"
+_C.MODEL.NAME = "fcn8_vgg18"
 _C.MODEL.NUM_CLASSES = 19
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.WEIGHTS = ""
@@ -19,7 +19,6 @@ _C.INPUT.INPUT_SCALES_TRAIN = (1.0, 1.0)
 _C.INPUT.IGNORE_LABEL = 255
 _C.INPUT.PIXEL_MEAN = [0.485, 0.456, 0.406]
 _C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]
-# Convert image to BGR format (for Caffe2 models), in range 0-255
 _C.INPUT.TO_BGR255 = False
 
 # Image ColorJitter
@@ -58,19 +57,10 @@ _C.SOLVER.GAMMA = 0.1
 
 _C.SOLVER.CHECKPOINT_PERIOD = 2000
 
-# Number of images per batch
-# This is global, so if we have 8 GPUs and BATCH_SIZE = 16, each GPU will
-# see 2 images per batch
 _C.SOLVER.BATCH_SIZE = 16
 _C.SOLVER.BATCH_SIZE_VAL = 1
 
-# ---------------------------------------------------------------------------- #
-# Specific test options
-# ---------------------------------------------------------------------------- #
 _C.TEST = CN()
-# Number of images per batch
-# This is global, so if we have 8 GPUs and BATCH_SIZE = 16, each GPU will
-# see 2 images per batch
 _C.TEST.BATCH_SIZE = 1
 
 _C.OUTPUT_DIR = "."

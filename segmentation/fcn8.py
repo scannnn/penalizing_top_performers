@@ -21,10 +21,6 @@ class SqueezeExtractor(nn.Module):
 				param.requires_grad = False
 
 	def get_copy_feature_info(self):
-		"""
-		Get [CopyFeatureInfo] when sampling such as maxpooling or conv2d which has the 2x2 stride.
-		:return: list. [CopyFeatureInfo]
-		"""
 		raise NotImplementedError()
 
 	def _get_last_conv2d_out_channels(self, features):

@@ -3,13 +3,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 def label_accuracy_score(label_trues, label_preds, n_class):
-    """
-    :param label_trues:
-    :param label_preds:
-    :param n_class:
-    :return: accuracy score and evaluation results
-    		(overall accuracy, mean accuracy, mean IoU, fwavacc)
-    """
 
     hist = np.zeros((n_class, n_class))
     for lt, lp in zip(label_trues, label_preds):

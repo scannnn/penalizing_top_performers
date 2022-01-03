@@ -16,8 +16,6 @@ from PIL import Image
 from configs import cfg
 
 def train(source_img_path, source_label_path, target_img_path, MAX_ITERATION=100, isGPU = False):
-    # cfg.merge_from_file('config/default.py')
-    # cfg.freeze()
 
     feature_extractor = build_encoder()
     device = torch.device("cpu") if not isGPU else torch.device("cuda:0")
