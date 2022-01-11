@@ -9,3 +9,10 @@ Google Colab Notebook Link : https://colab.research.google.com/drive/1iaZ8P2qclw
 
 For this repository to create output, shared google drive should be added to implementer's drive and colab notebook should be executed.
 
+When the training start, the code will start to save the results and the models to /content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs directory
+This directory can be changed in utils/logger.py
+While we are working on this project, we changed it a lot. Our different experiments
+can be found in /content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output directory
+AFTER TRAINING DONE, THE RESULTS THAT WE SHOWED IN THE PRESENTATION WILL BE IN THE 
+/content/gdrive/MyDrive/AI_PROJECT(BLG_527E)/fcn8vgg16_output/runs/images/fcn8_vgg16/gta5 directory
+
